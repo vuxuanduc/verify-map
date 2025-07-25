@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Check Name Commune</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <script>
+      (async () => {
+        const query = `
+                [out:json][timeout:60];
+                relation(1902947);
+                rel(r:"subarea")->.subareas;
+                (
+                node(r.subareas:"label");
+                );
+                out body;
+            `;
+
+        const response = await fetch("http://171.244.3.39:89/api/interpreter", {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain",
+          },
+          body: query.trim(),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();        
+    
+        const results = data.elements.map((el) => ({
+          name: el.tags?.["name"] || "(Không có tên)",
+          id: el.id,
+          lat: el.lat,
+          lon: el.lon,
+        }));
+
+        // Hàm check địa chỉ của label;
+        let count = 1;
+        for (const label of results) {
+        //   const queryLabel = `
+        //         [out:json][timeout:25];
+        //         relation["boundary"="administrative"]["admin_level"="8"](around:10, ${label.lat}, ${label.lon});
+        //         out tags;
+        //     `;
+
+        const queryLabel = `
+                [out:json][timeout:25];
+                node(${label.id})->.n;
+                rel(bn.n)["boundary"="administrative"]["admin_level"="8"];
+                out tags center;
+            `;
+
+          const res = await fetch("http://171.244.3.39:89/api/interpreter", {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain",
+            },
+            body: queryLabel.trim(),
+          });
+
+          const commune = await res.json();          
+          const nameCommune = commune.elements[0].tags?.["name:vi"];
+          if(label.name == nameCommune) {
+            console.log(nameCommune + " - " + label.name + " - " + count);
+            count++;
+          }
+        }
+        
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Export to Excel</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <button onclick="fetchAndExport()">Tải Excel</button>
+
+  <script>
+    async function fetchAndExport() {
+      const query = `
+        [out:json][timeout:25];
+        relation(1873490);
+        rel(r:"subarea");
+        out tags;
+      `;
+
+      const response = await fetch('http://171.244.3.39:89/api/interpreter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain'
+        },
+        body: query.trim()
+      });
+
+      if (!response.ok) {
+        alert(`HTTP error! Status: ${response.status}`);
+        return;
+      }
+
+      const data = await response.json();
+
+      // Tạo danh sách xã/phường có name:vi
+      const rows = data.elements
+        .map(el => el.tags?.['name:vi'])
+        .filter(name => name)
+        .map(name => ({ 'Xã/Phường': "T. Cà Mau, " + name }));
+
+      // Tạo workbook và worksheet
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "XaPhuong");
+
+      // Xuất file
+      XLSX.writeFile(workbook, "Ca Mau.xlsx");
+    }
+  </script>
+</body>
+</html>
