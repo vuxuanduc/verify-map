@@ -65,7 +65,7 @@
 
           const commune = await res.json();          
           const nameCommune = commune.elements[0].tags?.["name:vi"];
-          if(label.name == nameCommune) {
+          if(label.name != nameCommune) {
             console.log(nameCommune + " - " + label.name + " - " + count);
             count++;
           }
